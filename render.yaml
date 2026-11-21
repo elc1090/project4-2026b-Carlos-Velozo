@@ -2,7 +2,7 @@
 
 databases:
   - name: mapeiasus-db
-    plan: free
+    plan: free # expira após 30 dias
     postgresMajorVersion: "18"
     databaseName: mapeiasus
     user: mapeiasus
@@ -11,16 +11,12 @@ services:
   - type: web
     name: mapeiasus
     runtime: python
-    plan: 0.5c-512mb # disco persistente exige plano pago
+    plan: free
     numInstances: 1
     rootDir: app_medicamentos_sus
     buildCommand: "pip install -r requirements.txt && python scripts/seed.py && python scripts/bootstrap_admin.py"
     startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 app:app"
     healthCheckPath: /health
-    disk:
-      name: mapeiasus-uploads
-      mountPath: /opt/render/project/src/mapeiasus-uploads
-      sizeGB: 1
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -36,8 +32,6 @@ services:
         value: "true"
       - key: AUTO_CREATE_TABLES
         value: "true"
-      - key: UPLOAD_FOLDER
-        value: /opt/render/project/src/mapeiasus-uploads
       # Preenchidos no painel do Render:
       - key: GOOGLE_CLIENT_ID
         sync: false
