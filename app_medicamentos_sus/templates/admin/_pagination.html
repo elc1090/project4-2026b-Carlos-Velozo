@@ -1,0 +1,69 @@
+{% macro nav_paginas(paginacao, url_pagina, rotulo) %}
+    {% if paginacao.pages > 1 %}
+        {% set inicio = [1, paginacao.page - 2]|max %}
+        {% set fim = [paginacao.pages, paginacao.page + 2]|min %}
+        <nav class="pagination" aria-label="Paginação de {{ rotulo }}">
+            <span class="page-info">
+                Página {{ paginacao.page }} de {{ paginacao.pages }}
+                · {{ paginacao.total }} {{ rotulo }}
+            </span>
+
+            <div class="page-buttons">
+                {% if paginacao.has_prev %}
+                    <a class="page-link" href="{{ url_pagina(paginacao.prev_num) }}"
+                       rel="prev" aria-label="Página anterior">
+                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                        <span>Anterior</span>
+                    </a>
+                {% else %}
+                    <span class="page-link disabled" aria-disabled="true">
+                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                        <span>Anterior</span>
+                    </span>
+                {% endif %}
+
+                {% if inicio > 1 %}
+                    <a class="page-link" href="{{ url_pagina(1) }}"
+                       aria-label="Página 1">1</a>
+                    {% if inicio > 2 %}
+                        <span class="page-ellipsis" aria-hidden="true">…</span>
+                    {% endif %}
+                {% endif %}
+
+                {% for numero in range(inicio, fim + 1) %}
+                    {% if numero == paginacao.page %}
+                        <span class="page-link is-current" aria-current="page">
+                            {{ numero }}
+                        </span>
+                    {% else %}
+                        <a class="page-link" href="{{ url_pagina(numero) }}"
+                           aria-label="Página {{ numero }}">{{ numero }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if fim < paginacao.pages %}
+                    {% if fim < paginacao.pages - 1 %}
+                        <span class="page-ellipsis" aria-hidden="true">…</span>
+                    {% endif %}
+                    <a class="page-link" href="{{ url_pagina(paginacao.pages) }}"
+                       aria-label="Página {{ paginacao.pages }}">
+                        {{ paginacao.pages }}
+                    </a>
+                {% endif %}
+
+                {% if paginacao.has_next %}
+                    <a class="page-link" href="{{ url_pagina(paginacao.next_num) }}"
+                       rel="next" aria-label="Próxima página">
+                        <span>Próxima</span>
+                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </a>
+                {% else %}
+                    <span class="page-link disabled" aria-disabled="true">
+                        <span>Próxima</span>
+                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </span>
+                {% endif %}
+            </div>
+        </nav>
+    {% endif %}
+{% endmacro %}

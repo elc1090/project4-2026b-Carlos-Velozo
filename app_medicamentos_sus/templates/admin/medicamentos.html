@@ -1,0 +1,146 @@
+{% extends "admin/base_admin.html" %}
+{% from "admin/_pagination.html" import nav_paginas %}
+
+{% block title %}Medicamentos — Painel MapeiaSUS{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fa-solid fa-chevron-right sep" aria-hidden="true"></i>
+    <strong>Medicamentos</strong>
+{% endblock %}
+
+{% block page_title %}Medicamentos{% endblock %}
+{% block page_subtitle %}
+    Cadastre e mantenha os medicamentos pesquisáveis na base.
+{% endblock %}
+
+{% block page_actions %}
+    <a class="btn btn-primary" href="{{ url_for('admin.novo_medicamento') }}">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Novo medicamento</span>
+    </a>
+{% endblock %}
+
+{% block admin_content %}
+<section class="admin-panel">
+    <form class="admin-toolbar" method="get" action="{{ url_for('admin.medicamentos') }}">
+        <div class="toolbar-search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input class="form-input" type="search" name="q" value="{{ termo }}"
+                   placeholder="Buscar por nome ou apresentação"
+                   aria-label="Buscar medicamentos">
+        </div>
+        <select class="form-input toolbar-select" name="situacao" aria-label="Situação">
+            <option value="todas" {{ 'selected' if situacao == 'todas' else '' }}>Todos</option>
+            <option value="ativos" {{ 'selected' if situacao == 'ativos' else '' }}>Ativos</option>
+            <option value="inativos" {{ 'selected' if situacao == 'inativos' else '' }}>Inativos</option>
+        </select>
+        <select class="form-input toolbar-select toolbar-select--wide" name="ordenar"
+                aria-label="Ordenar por">
+            <option value="nome" {{ 'selected' if ordenacao == 'nome' else '' }}>Nome (A–Z)</option>
+            <option value="nome_desc" {{ 'selected' if ordenacao == 'nome_desc' else '' }}>Nome (Z–A)</option>
+            <option value="recentes" {{ 'selected' if ordenacao == 'recentes' else '' }}>Mais recentes</option>
+            <option value="antigas" {{ 'selected' if ordenacao == 'antigas' else '' }}>Mais antigos</option>
+        </select>
+        <button class="btn btn-primary" type="submit">
+            <i class="fa-solid fa-filter" aria-hidden="true"></i><span>Filtrar</span>
+        </button>
+        {% if termo or situacao != 'todas' or ordenacao != 'nome' %}
+            <a class="btn btn-secondary" href="{{ url_for('admin.medicamentos') }}">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Limpar</span>
+            </a>
+        {% endif %}
+    </form>
+
+    {% if paginacao.items %}
+        <div class="table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th scope="col"
+                            aria-sort="{{ 'ascending' if ordenacao == 'nome' else ('descending' if ordenacao == 'nome_desc' else 'none') }}">
+                            <a class="th-sort"
+                               href="{{ url_args(ordenar=('nome_desc' if ordenacao == 'nome' else 'nome'), pagina=None) }}">
+                                Medicamento
+                                {% if ordenacao == 'nome' %}
+                                    <i class="fa-solid fa-caret-up" aria-hidden="true"></i>
+                                {% elif ordenacao == 'nome_desc' %}
+                                    <i class="fa-solid fa-caret-down" aria-hidden="true"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-sort" aria-hidden="true"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th scope="col">Apresentação</th>
+                        <th scope="col">Farmácias</th>
+                        <th scope="col">Situação</th>
+                        <th scope="col" class="cell-actions">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for medicamento in paginacao.items %}
+                        <tr>
+                            <td><strong>{{ medicamento.nome }}</strong></td>
+                            <td>{{ medicamento.apresentacao or "—" }}</td>
+                            <td>
+                                {% set total = disponibilidades.get(medicamento.id, 0) %}
+                                <span class="badge {{ 'badge-info' if total else 'badge-muted' }}">
+                                    {{ total }} farmácia(s)
+                                </span>
+                            </td>
+                            <td>
+                                {% if medicamento.ativo %}
+                                    <span class="badge badge-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge badge-muted">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="cell-actions">
+                                <div class="action-group">
+                                    <a class="btn btn-secondary btn-sm"
+                                       href="{{ url_for('admin.editar_medicamento', medicamento_id=medicamento.id) }}">
+                                        <i class="fa-solid fa-pen" aria-hidden="true"></i><span>Editar</span>
+                                    </a>
+                                    <form method="post"
+                                          action="{{ url_for('admin.excluir_medicamento', medicamento_id=medicamento.id) }}"
+                                          data-confirm="Excluir o medicamento &quot;{{ medicamento.nome }}&quot;? Os vínculos com farmácias também serão removidos."
+                                          onsubmit="return confirm('Excluir este medicamento? Os vínculos com farmácias também serão removidos.');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-danger btn-sm" type="submit">
+                                            <i class="fa-solid fa-trash-can" aria-hidden="true"></i><span>Excluir</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {{ nav_paginas(paginacao, url_pagina, 'medicamentos') }}
+    {% else %}
+        <div class="admin-empty-state">
+            <i class="fa-solid fa-pills" aria-hidden="true"></i>
+            <h3>Nenhum medicamento encontrado</h3>
+            <p>
+                {% if termo or situacao != 'todas' %}
+                    Não há medicamentos que correspondam aos filtros atuais.
+                    Tente outro termo ou limpe os filtros.
+                {% else %}
+                    Ainda não há medicamentos cadastrados. Cadastre o primeiro
+                    para que ele possa ser associado às farmácias.
+                {% endif %}
+            </p>
+            <div class="empty-actions">
+                {% if termo or situacao != 'todas' %}
+                    <a class="btn btn-secondary" href="{{ url_for('admin.medicamentos') }}">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Limpar filtros</span>
+                    </a>
+                {% endif %}
+                <a class="btn btn-primary" href="{{ url_for('admin.novo_medicamento') }}">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Cadastrar medicamento</span>
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

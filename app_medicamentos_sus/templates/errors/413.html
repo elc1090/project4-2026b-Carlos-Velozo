@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Arquivo muito grande — MapeiaSUS{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+    <div class="auth-card error-card">
+        <div class="error-code">413</div>
+        <h2>Arquivo muito grande</h2>
+        <p>{{ motivo or "O arquivo enviado excede o limite permitido." }}</p>
+        <a class="btn btn-primary btn-block" href="{{ url_for('admin.farmacias') }}">
+            <i class="fa-solid fa-arrow-left"></i> Voltar às farmácias
+        </a>
+    </div>
+</main>
+{% endblock %}

@@ -23,6 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarHistorico();
 });
 
+function obterCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
 function calcularDistanciaKM(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -51,7 +56,7 @@ function obterLocalizacaoUsuario() {
                 fillOpacity: 0.9,
                 radius: 8,
                 weight: 3
-            }).addTo(map).bindPopup("<b>Sua Localização</b>").openPopup();
+            }).addTo(map).bindPopup("<b>Sua localização</b>").openPopup();
 
             map.setView([userLocation.lat, userLocation.lng], 14);
         }, () => {
@@ -67,6 +72,10 @@ async function executarBusca() {
     document.getElementById('suggestions').innerHTML = '';
 
     const response = await fetch(`/api/buscar?medicamento=${encodeURIComponent(termo)}`);
+    if (response.status === 401) {
+        window.location.href = '/login';
+        return;
+    }
     let farmacias = await response.json();
 
     if (userLocation) {
@@ -82,15 +91,29 @@ async function executarBusca() {
 
 async function salvarHistoricoPOST(termo) {
     try {
-        await fetch('/api/historico', {
+        const resposta = await fetch('/api/historico', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': obterCsrfToken()
+            },
             body: JSON.stringify({
                 termo: termo,
                 lat: userLocation ? userLocation.lat : null,
                 lng: userLocation ? userLocation.lng : null
             })
         });
+
+        if (resposta.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
+
+        if (!resposta.ok) {
+            console.error("Não foi possível registrar o histórico:", resposta.status);
+            return;
+        }
+
         carregarHistorico();
     } catch (err) {
         console.error("Erro ao salvar histórico:", err);
@@ -137,7 +160,7 @@ function renderizarResultados(farmacias) {
         const card = document.createElement('div');
         card.className = `pharmacy-card ${isBest ? 'best-option' : ''}`;
         card.innerHTML = `
-            ${isBest ? '<span class="tag-nearest"><i class="fa-solid fa-bolt"></i> Mais Próxima</span>' : ''}
+            ${isBest ? '<span class="tag-nearest"><i class="fa-solid fa-bolt"></i> Mais próxima</span>' : ''}
             <h4>${f.nome}</h4>
             <p><i class="fa-solid fa-location-dot"></i> ${f.endereco}</p>
             ${f.distancia !== undefined ? `
@@ -169,6 +192,10 @@ async function buscarSugestoes() {
     }
 
     const res = await fetch(`/api/sugestoes?q=${encodeURIComponent(q)}`);
+    if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+    }
     const sugestoes = await res.json();
     
     list.innerHTML = sugestoes.map(item => `<li>${item}</li>`).join('');
@@ -184,6 +211,10 @@ async function buscarSugestoes() {
 
 async function carregarHistorico() {
     const res = await fetch('/api/historico');
+    if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+    }
     const historico = await res.json();
     const ul = document.getElementById('history-list');
     

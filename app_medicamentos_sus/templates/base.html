@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}MapeiaSUS{% endblock %}</title>
+
+    <script>document.documentElement.classList.add("js");</script>
+
+    <!-- Fonte Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+    <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+
+    <header class="navbar">
+        <a class="brand" href="{{ url_for('auth.login') if config.REQUIRE_LOGIN and not current_user.is_authenticated else url_for('public.index') }}">
+            <div class="brand-logo">
+                <i class="fa-solid fa-notes-medical"></i>
+            </div>
+            <div class="brand-text">
+                <h1>Mapeia<span>SUS</span></h1>
+                <p>Rede de Dispensação de Medicamentos</p>
+            </div>
+        </a>
+
+        <div class="nav-right">
+            <div class="header-badge">
+                <i class="fa-solid fa-location-crosshairs"></i> Santa Maria - RS
+            </div>
+
+            {% if current_user.is_authenticated %}
+                {% if current_user.is_admin %}
+                    <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+                        <i class="fa-solid fa-gauge-high"></i><span>Painel Admin</span>
+                    </a>
+                {% endif %}
+                <span class="nav-user" title="{{ current_user.email }}">
+                    <i class="fa-solid fa-circle-user"></i>
+                    <span>{{ current_user.nome or current_user.email }}</span>
+                </span>
+                <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-ghost">
+                        <i class="fa-solid fa-right-from-bracket"></i><span>Sair</span>
+                    </button>
+                </form>
+            {% elif request.endpoint != 'auth.login' %}
+                <a class="btn btn-ghost" href="{{ url_for('auth.login') }}">
+                    <i class="fa-solid fa-right-to-bracket"></i><span>Entrar</span>
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% set icones = {
+                'success': 'fa-circle-check',
+                'error': 'fa-circle-exclamation',
+                'warning': 'fa-triangle-exclamation',
+                'info': 'fa-circle-info'
+            } %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" data-alert
+                         role="{{ 'alert' if category in ['error', 'warning'] else 'status' }}">
+                        <i class="fa-solid {{ icones.get(category, 'fa-circle-info') }} alert-icon"
+                           aria-hidden="true"></i>
+                        <span class="alert-message">{{ message }}</span>
+                        <button type="button" class="alert-close" aria-label="Fechar aviso">
+                            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                        </button>
+                        <span class="alert-progress" aria-hidden="true"></span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div id="conteudo" class="page-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="{{ url_for('static', filename='js/ui.js') }}" defer></script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

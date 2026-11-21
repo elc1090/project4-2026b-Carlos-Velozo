@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Criar conta — MapeiaSUS{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+    <div class="auth-card">
+        <div class="auth-icon">
+            <i class="fa-solid fa-user-plus"></i>
+        </div>
+
+        <h2>Criar conta</h2>
+        <p class="auth-subtitle">
+            Cadastre-se com e-mail e senha para acessar a busca e o painel
+            conforme o seu papel.
+        </p>
+
+        <form method="post" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.nome.label }}
+                {{ form.nome(class="form-input", placeholder="Seu nome (opcional)",
+                             autocomplete="name") }}
+                {% for erro in form.nome.errors %}
+                    <span class="field-error">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.email.label }}
+                {{ form.email(class="form-input", placeholder="voce@exemplo.com",
+                              autocomplete="email", autofocus=true) }}
+                {% for erro in form.email.errors %}
+                    <span class="field-error">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.senha.label }}
+                {{ form.senha(class="form-input", placeholder="Mínimo de 8 caracteres",
+                              autocomplete="new-password") }}
+                {% for erro in form.senha.errors %}
+                    <span class="field-error">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.confirmar_senha.label }}
+                {{ form.confirmar_senha(class="form-input", placeholder="Repita a senha",
+                                        autocomplete="new-password") }}
+                {% for erro in form.confirmar_senha.errors %}
+                    <span class="field-error">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            {{ form.submit(class="btn btn-primary btn-block") }}
+        </form>
+
+        <p class="auth-switch">
+            Já tem conta?
+            <a href="{{ url_for('auth.login') }}">Entrar</a>
+        </p>
+
+        {% if config.GOOGLE_CLIENT_ID %}
+            <p class="auth-note">
+                Também é possível entrar com o Google na tela de login.
+            </p>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

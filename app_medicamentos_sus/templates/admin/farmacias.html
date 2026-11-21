@@ -1,0 +1,164 @@
+{% extends "admin/base_admin.html" %}
+{% from "admin/_pagination.html" import nav_paginas %}
+
+{% block title %}Farmácias — Painel MapeiaSUS{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fa-solid fa-chevron-right sep" aria-hidden="true"></i>
+    <strong>Farmácias</strong>
+{% endblock %}
+
+{% block page_title %}Farmácias{% endblock %}
+{% block page_subtitle %}
+    Gerencie os estabelecimentos e os medicamentos disponíveis em cada um.
+{% endblock %}
+
+{% block page_actions %}
+    <a class="btn btn-primary" href="{{ url_for('admin.nova_farmacia') }}">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Nova farmácia</span>
+    </a>
+{% endblock %}
+
+{% block admin_content %}
+<section class="admin-panel">
+    <form class="admin-toolbar" method="get" action="{{ url_for('admin.farmacias') }}">
+        <div class="toolbar-search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input class="form-input" type="search" name="q" value="{{ termo }}"
+                   placeholder="Buscar por nome, endereço ou bairro"
+                   aria-label="Buscar farmácias">
+        </div>
+        <select class="form-input toolbar-select" name="situacao" aria-label="Situação">
+            <option value="todas" {{ 'selected' if situacao == 'todas' else '' }}>Todas</option>
+            <option value="ativas" {{ 'selected' if situacao == 'ativas' else '' }}>Ativas</option>
+            <option value="inativas" {{ 'selected' if situacao == 'inativas' else '' }}>Inativas</option>
+        </select>
+        <select class="form-input toolbar-select toolbar-select--wide" name="ordenar"
+                aria-label="Ordenar por">
+            <option value="nome" {{ 'selected' if ordenacao == 'nome' else '' }}>Nome (A–Z)</option>
+            <option value="nome_desc" {{ 'selected' if ordenacao == 'nome_desc' else '' }}>Nome (Z–A)</option>
+            <option value="recentes" {{ 'selected' if ordenacao == 'recentes' else '' }}>Mais recentes</option>
+            <option value="antigas" {{ 'selected' if ordenacao == 'antigas' else '' }}>Mais antigas</option>
+        </select>
+        <button class="btn btn-primary" type="submit">
+            <i class="fa-solid fa-filter" aria-hidden="true"></i><span>Filtrar</span>
+        </button>
+        {% if termo or situacao != 'todas' or ordenacao != 'nome' %}
+            <a class="btn btn-secondary" href="{{ url_for('admin.farmacias') }}">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Limpar</span>
+            </a>
+        {% endif %}
+    </form>
+
+    {% if paginacao.items %}
+        <div class="table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th scope="col"
+                            aria-sort="{{ 'ascending' if ordenacao == 'nome' else ('descending' if ordenacao == 'nome_desc' else 'none') }}">
+                            <a class="th-sort"
+                               href="{{ url_args(ordenar=('nome_desc' if ordenacao == 'nome' else 'nome'), pagina=None) }}">
+                                Farmácia
+                                {% if ordenacao == 'nome' %}
+                                    <i class="fa-solid fa-caret-up" aria-hidden="true"></i>
+                                {% elif ordenacao == 'nome_desc' %}
+                                    <i class="fa-solid fa-caret-down" aria-hidden="true"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-sort" aria-hidden="true"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th scope="col">Endereço</th>
+                        <th scope="col">Bairro</th>
+                        <th scope="col">Medicamentos</th>
+                        <th scope="col">Situação</th>
+                        <th scope="col" class="cell-actions">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for farmacia in paginacao.items %}
+                        <tr>
+                            <td>
+                                <div class="cell-ident">
+                                    <span class="cell-thumb">
+                                        {% if farmacia.imagem_url %}
+                                            <img src="{{ farmacia.imagem_url }}" alt=""
+                                                 loading="lazy" onerror="this.remove()">
+                                        {% endif %}
+                                        <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="cell-ident-text">
+                                        <strong>{{ farmacia.nome }}</strong>
+                                        {% if farmacia.telefone %}
+                                            <span class="cell-sub">{{ farmacia.telefone }}</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </td>
+                            <td>{{ farmacia.endereco }}</td>
+                            <td>{{ farmacia.bairro or "—" }}</td>
+                            <td>
+                                {% set total = contagens.get(farmacia.id, 0) %}
+                                <span class="badge {{ 'badge-info' if total else 'badge-muted' }}">
+                                    {{ total }} disponível(is)
+                                </span>
+                            </td>
+                            <td>
+                                {% if farmacia.ativo %}
+                                    <span class="badge badge-success">Ativa</span>
+                                {% else %}
+                                    <span class="badge badge-muted">Inativa</span>
+                                {% endif %}
+                            </td>
+                            <td class="cell-actions">
+                                <div class="action-group">
+                                    <a class="btn btn-secondary btn-sm"
+                                       href="{{ url_for('admin.editar_farmacia', farmacia_id=farmacia.id) }}">
+                                        <i class="fa-solid fa-pen" aria-hidden="true"></i><span>Editar</span>
+                                    </a>
+                                    <form method="post"
+                                          action="{{ url_for('admin.excluir_farmacia', farmacia_id=farmacia.id) }}"
+                                          data-confirm="Excluir a farmácia &quot;{{ farmacia.nome }}&quot;? Os vínculos com medicamentos também serão removidos."
+                                          onsubmit="return confirm('Excluir esta farmácia? Os vínculos com medicamentos também serão removidos.');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-danger btn-sm" type="submit">
+                                            <i class="fa-solid fa-trash-can" aria-hidden="true"></i><span>Excluir</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {{ nav_paginas(paginacao, url_pagina, 'farmácias') }}
+    {% else %}
+        <div class="admin-empty-state">
+            <i class="fa-solid fa-house-medical-circle-xmark" aria-hidden="true"></i>
+            <h3>Nenhuma farmácia encontrada</h3>
+            <p>
+                {% if termo or situacao != 'todas' %}
+                    Não há farmácias que correspondam aos filtros atuais.
+                    Tente outro termo ou limpe os filtros.
+                {% else %}
+                    Ainda não há farmácias cadastradas. Comece criando o primeiro
+                    estabelecimento da rede.
+                {% endif %}
+            </p>
+            <div class="empty-actions">
+                {% if termo or situacao != 'todas' %}
+                    <a class="btn btn-secondary" href="{{ url_for('admin.farmacias') }}">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Limpar filtros</span>
+                    </a>
+                {% endif %}
+                <a class="btn btn-primary" href="{{ url_for('admin.nova_farmacia') }}">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Cadastrar farmácia</span>
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

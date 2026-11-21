@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Entrar — MapeiaSUS{% endblock %}
+
+{% block head %}
+{% if config.GOOGLE_CLIENT_ID %}
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+    <div class="auth-card">
+        <div class="auth-icon">
+            <i class="fa-solid fa-user-lock"></i>
+        </div>
+
+        {% if config.REQUIRE_LOGIN %}
+            <h2>Acesso restrito</h2>
+            <p class="auth-subtitle">
+                Entre com sua conta para acessar a busca de medicamentos e o painel.
+            </p>
+        {% else %}
+            <h2>Entre na sua conta</h2>
+            <p class="auth-subtitle">
+                Acesse o painel administrativo. A busca pública continua disponível sem login.
+            </p>
+        {% endif %}
+
+        {% if config.GOOGLE_CLIENT_ID %}
+            <div class="google-login">
+                <div id="g_id_onload"
+                     data-client_id="{{ config.GOOGLE_CLIENT_ID }}"
+                     data-callback="onGoogleCredential"
+                     data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-shape="rectangular"
+                     data-theme="outline"
+                     data-text="continue_with"
+                     data-size="large"
+                     data-logo_alignment="left"
+                     data-locale="pt-BR">
+                </div>
+                <span id="google-error" class="field-error" role="alert" aria-live="polite"></span>
+            </div>
+
+            <div class="auth-divider"><span>ou entre com e-mail</span></div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.email.label }}
+                {{ form.email(class="form-input", placeholder="voce@exemplo.com",
+                              autocomplete="email", autofocus=true) }}
+                {% for erro in form.email.errors %}
+                    <span class="field-error">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.senha.label }}
+                {{ form.senha(class="form-input", placeholder="Digite sua senha",
+                              autocomplete="current-password") }}
+                {% for erro in form.senha.errors %}
+                    <span class="field-error">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-check">
+                {{ form.lembrar() }}
+                {{ form.lembrar.label }}
+            </div>
+
+            {{ form.submit(class="btn btn-primary btn-block") }}
+        </form>
+
+        {% if config.ALLOW_REGISTRATION %}
+            <p class="auth-switch">
+                Ainda não tem conta?
+                <a href="{{ url_for('auth.register') }}">Criar conta</a>
+            </p>
+        {% endif %}
+
+        {% if not config.REQUIRE_LOGIN %}
+            <a class="back-link" href="{{ url_for('public.index') }}">
+                <i class="fa-solid fa-arrow-left"></i> Voltar à busca
+            </a>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+{% if config.GOOGLE_CLIENT_ID %}
+<script>
+    async function onGoogleCredential(response) {
+        const erro = document.getElementById('google-error');
+        erro.textContent = '';
+
+        try {
+            const resposta = await fetch('{{ url_for("auth.google_login") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    credential: response.credential,
+                    next: {{ request.args.get('next')|tojson }}
+                })
+            });
+
+            const dados = await resposta.json().catch(() => ({}));
+            if (!resposta.ok) {
+                erro.textContent = dados.error || 'Não foi possível entrar com o Google.';
+                return;
+            }
+
+            window.location.assign(dados.redirect || '{{ url_for("public.index") }}');
+        } catch (falha) {
+            erro.textContent = 'Falha de conexão. Tente novamente.';
+        }
+    }
+</script>
+{% endif %}
+{% endblock %}

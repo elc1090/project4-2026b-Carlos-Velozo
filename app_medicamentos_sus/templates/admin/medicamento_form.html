@@ -1,0 +1,153 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ 'Editar medicamento' if medicamento else 'Novo medicamento' }} — Painel MapeiaSUS{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fa-solid fa-chevron-right sep" aria-hidden="true"></i>
+    <a href="{{ url_for('admin.medicamentos') }}">Medicamentos</a>
+    <i class="fa-solid fa-chevron-right sep" aria-hidden="true"></i>
+    <strong>{{ 'Editar' if medicamento else 'Novo' }}</strong>
+{% endblock %}
+
+{% block page_title %}{{ 'Editar medicamento' if medicamento else 'Novo medicamento' }}{% endblock %}
+{% block page_subtitle %}
+    {{ medicamento.nome if medicamento else 'Cadastre um medicamento para a busca pública.' }}
+{% endblock %}
+
+{% block page_actions %}
+    <a class="btn btn-secondary" href="{{ url_for('admin.medicamentos') }}">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>Voltar</span>
+    </a>
+{% endblock %}
+
+{% block admin_content %}
+<section class="admin-panel">
+    <div class="panel-header">
+        <div>
+            <h2><i class="fa-solid fa-pills" aria-hidden="true"></i> Dados do medicamento</h2>
+            <p class="panel-hint">
+                Campos com <span class="required-mark">*</span> são obrigatórios.
+            </p>
+        </div>
+    </div>
+
+    <form method="post" novalidate data-loading>
+        {{ form.hidden_tag() }}
+
+        <div class="form-grid">
+            <div class="form-group form-span-2">
+                {{ form.nome.label }}
+                {{ form.nome(class="form-input", placeholder="Ex.: Dipirona sódica") }}
+                {% for erro in form.nome.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group form-span-2">
+                {{ form.apresentacao.label }}
+                {{ form.apresentacao(class="form-input", placeholder="Ex.: 500 mg, comprimido") }}
+                {% for erro in form.apresentacao.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-check">
+            {{ form.ativo() }}
+            {{ form.ativo.label }}
+        </div>
+
+        <div class="admin-form-actions">
+            <button class="btn btn-primary" type="submit">
+                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                <span>{{ form.submit.label.text }}</span>
+            </button>
+            <a class="btn btn-secondary" href="{{ url_for('admin.medicamentos') }}">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</section>
+
+{% if medicamento %}
+    <section class="admin-panel">
+        <div class="panel-header">
+            <div>
+                <h2><i class="fa-solid fa-house-medical" aria-hidden="true"></i> Farmácias com disponibilidade</h2>
+                <p class="panel-hint">
+                    A disponibilidade é gerenciada no inventário de cada farmácia.
+                </p>
+            </div>
+            <span class="badge badge-info">{{ farmacias|length }} farmácia(s)</span>
+        </div>
+
+        {% if farmacias %}
+            <div class="table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Farmácia</th>
+                            <th scope="col">Bairro</th>
+                            <th scope="col">Situação</th>
+                            <th scope="col" class="cell-actions">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for farmacia in farmacias %}
+                            <tr>
+                                <td>
+                                    <div class="cell-ident">
+                                        <span class="cell-thumb">
+                                            {% if farmacia.imagem_url %}
+                                                <img src="{{ farmacia.imagem_url }}" alt=""
+                                                     loading="lazy" onerror="this.remove()">
+                                            {% endif %}
+                                            <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
+                                        </span>
+                                        <span class="cell-ident-text">
+                                            <strong>{{ farmacia.nome }}</strong>
+                                            {% if farmacia.telefone %}
+                                                <span class="cell-sub">{{ farmacia.telefone }}</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>{{ farmacia.bairro or "—" }}</td>
+                                <td>
+                                    {% if farmacia.ativo %}
+                                        <span class="badge badge-success">Ativa</span>
+                                    {% else %}
+                                        <span class="badge badge-muted">Inativa</span>
+                                    {% endif %}
+                                </td>
+                                <td class="cell-actions">
+                                    <a class="btn btn-secondary btn-sm"
+                                       href="{{ url_for('admin.editar_farmacia', farmacia_id=farmacia.id, inv_q=medicamento.nome, inv_pagina=1) }}">
+                                        <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i>
+                                        <span>Gerenciar inventário</span>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="admin-empty-state">
+                <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+                <h3>Sem farmácias associadas</h3>
+                <p>
+                    Este medicamento ainda não está disponível em nenhuma farmácia.
+                    Abra o inventário de uma farmácia para associá-lo.
+                </p>
+                <div class="empty-actions">
+                    <a class="btn btn-primary" href="{{ url_for('admin.farmacias') }}">
+                        <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
+                        <span>Ir para farmácias</span>
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+{% endif %}
+{% endblock %}

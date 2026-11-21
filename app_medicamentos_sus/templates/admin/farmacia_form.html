@@ -1,0 +1,298 @@
+{% extends "admin/base_admin.html" %}
+{% from "admin/_pagination.html" import nav_paginas %}
+
+{% block title %}{{ 'Editar farmácia' if farmacia else 'Nova farmácia' }} — Painel MapeiaSUS{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fa-solid fa-chevron-right sep" aria-hidden="true"></i>
+    <a href="{{ url_for('admin.farmacias') }}">Farmácias</a>
+    <i class="fa-solid fa-chevron-right sep" aria-hidden="true"></i>
+    <strong>{{ 'Editar' if farmacia else 'Nova' }}</strong>
+{% endblock %}
+
+{% block page_title %}{{ 'Editar farmácia' if farmacia else 'Nova farmácia' }}{% endblock %}
+{% block page_subtitle %}
+    {{ farmacia.nome if farmacia else 'Cadastre um novo estabelecimento na rede.' }}
+{% endblock %}
+
+{% block page_actions %}
+    <a class="btn btn-secondary" href="{{ url_for('admin.farmacias') }}">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>Voltar</span>
+    </a>
+{% endblock %}
+
+{% block admin_content %}
+<section class="admin-panel">
+    <div class="panel-header">
+        <div>
+            <h2><i class="fa-solid fa-store" aria-hidden="true"></i> Dados da farmácia</h2>
+            <p class="panel-hint">
+                Campos com <span class="required-mark">*</span> são obrigatórios.
+            </p>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate data-loading>
+        {{ form.hidden_tag() }}
+
+        <div class="form-grid">
+            <div class="form-group form-span-2">
+                {{ form.nome.label }}
+                {{ form.nome(class="form-input", placeholder="Ex.: Farmácia Central") }}
+                {% for erro in form.nome.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group form-span-2">
+                {{ form.endereco.label }}
+                {{ form.endereco(class="form-input", placeholder="Rua, número") }}
+                {% for erro in form.endereco.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.bairro.label }}
+                {{ form.bairro(class="form-input", placeholder="Centro") }}
+                {% for erro in form.bairro.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.telefone.label }}
+                {{ form.telefone(class="form-input", placeholder="(55) 3220-0000") }}
+                {% for erro in form.telefone.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group form-span-2">
+                {{ form.horario.label }}
+                {{ form.horario(class="form-input", placeholder="Segunda a sábado, 8h às 20h") }}
+                {% for erro in form.horario.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.lat.label }}
+                {{ form.lat(class="form-input", step="any", placeholder="-29.6842") }}
+                {% for erro in form.lat.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+                <span class="form-hint">Coordenada decimal entre -90 e 90.</span>
+            </div>
+
+            <div class="form-group">
+                {{ form.lng.label }}
+                {{ form.lng(class="form-input", step="any", placeholder="-53.8069") }}
+                {% for erro in form.lng.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+                <span class="form-hint">Coordenada decimal entre -180 e 180.</span>
+            </div>
+
+            <div class="form-group form-span-2">
+                {{ form.imagem.label }}
+                {{ form.imagem(class="form-input file-input",
+                               accept="image/png,image/jpeg,image/webp",
+                               data_upload="foto",
+                               data_max_size="5242880") }}
+                {% for erro in form.imagem.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+                <span class="form-hint">
+                    Envie uma foto em PNG, JPG ou WEBP (até 5 MB). O upload
+                    substitui a imagem atual.
+                </span>
+
+                <div class="upload-preview" data-upload-preview hidden>
+                    <img data-upload-img src="" alt="Pré-visualização da nova foto">
+                    <div class="upload-preview-info">
+                        <strong>Pré-visualização</strong>
+                        <span data-upload-nome></span>
+                        <span data-upload-tamanho></span>
+                        <span class="upload-warning" data-upload-aviso hidden></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group form-span-2">
+                {{ form.imagem_url.label }}
+                {{ form.imagem_url(class="form-input", placeholder="https://exemplo.com/farmacia.jpg") }}
+                {% for erro in form.imagem_url.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+                <span class="form-hint">
+                    Alternativa ao upload, para imagens já hospedadas na
+                    internet. Se você enviar um arquivo, ele tem prioridade.
+                </span>
+            </div>
+
+            {% if farmacia and farmacia.imagem_url %}
+                <div class="current-image form-span-2">
+                    <img src="{{ farmacia.imagem_url }}"
+                         alt="Foto atual de {{ farmacia.nome }}"
+                         onerror="this.style.display='none'">
+                    <div class="current-image-info">
+                        <strong>Foto atual</strong>
+                        <span>{{ farmacia.imagem_url }}</span>
+                        <div class="form-check">
+                            {{ form.remover_imagem() }}
+                            {{ form.remover_imagem.label }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-check">
+            {{ form.ativo() }}
+            {{ form.ativo.label }}
+        </div>
+
+        <div class="admin-form-actions">
+            <button class="btn btn-primary" type="submit">
+                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                <span>{{ form.submit.label.text }}</span>
+            </button>
+            <a class="btn btn-secondary" href="{{ url_for('admin.farmacias') }}">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</section>
+
+{% if farmacia %}
+    <section class="admin-panel">
+        <div class="panel-header">
+            <div>
+                <h2><i class="fa-solid fa-pills" aria-hidden="true"></i> Inventário de medicamentos</h2>
+                <p class="panel-hint">
+                    Marque os medicamentos disponíveis nesta farmácia e clique em
+                    <strong>Salvar inventário</strong>. A alteração vale apenas
+                    para os itens desta página.
+                </p>
+            </div>
+            <span class="badge badge-info">
+                {{ total_disponiveis }} disponível(is)
+            </span>
+        </div>
+
+        <form class="admin-toolbar" method="get"
+              action="{{ url_for('admin.editar_farmacia', farmacia_id=farmacia.id) }}">
+            <div class="toolbar-search">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <input class="form-input" type="search" name="inv_q" value="{{ inv_termo }}"
+                       placeholder="Buscar medicamento por nome ou apresentação"
+                       aria-label="Buscar medicamentos do inventário">
+            </div>
+            <button class="btn btn-primary" type="submit">
+                <i class="fa-solid fa-filter" aria-hidden="true"></i><span>Buscar</span>
+            </button>
+            {% if inv_termo %}
+                <a class="btn btn-secondary"
+                   href="{{ url_for('admin.editar_farmacia', farmacia_id=farmacia.id) }}">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Limpar</span>
+                </a>
+            {% endif %}
+        </form>
+
+        <form method="post" data-loading
+              action="{{ url_for('admin.atualizar_inventario', farmacia_id=farmacia.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="inv_q" value="{{ inv_termo }}">
+            <input type="hidden" name="inv_pagina" value="{{ inventario.page }}">
+
+            {% if inventario.items %}
+                <div class="table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="cell-check">
+                                    <input type="checkbox" id="marcar-todos"
+                                           title="Marcar ou desmarcar todos desta página"
+                                           aria-label="Marcar todos desta página">
+                                </th>
+                                <th scope="col">Medicamento</th>
+                                <th scope="col">Apresentação</th>
+                                <th scope="col">Situação</th>
+                                <th scope="col">Vínculo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for medicamento in inventario.items %}
+                                {% set vinculo = vinculos.get(medicamento.id) %}
+                                <tr>
+                                    <td class="cell-check">
+                                        <input type="hidden" name="visivel" value="{{ medicamento.id }}">
+                                        <input class="inventario-check" type="checkbox"
+                                               name="disponivel" value="{{ medicamento.id }}"
+                                               aria-label="Disponibilidade de {{ medicamento.nome }}"
+                                               {% if vinculo and vinculo.disponivel %}checked{% endif %}>
+                                    </td>
+                                    <td><strong>{{ medicamento.nome }}</strong></td>
+                                    <td>{{ medicamento.apresentacao or "—" }}</td>
+                                    <td>
+                                        {% if medicamento.ativo %}
+                                            <span class="badge badge-success">Ativo</span>
+                                        {% else %}
+                                            <span class="badge badge-muted">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if vinculo and vinculo.disponivel %}
+                                            <span class="badge badge-success">Disponível</span>
+                                        {% elif vinculo %}
+                                            <span class="badge badge-warning">Indisponível</span>
+                                        {% else %}
+                                            <span class="badge badge-muted">Sem vínculo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="admin-form-actions inventory-actions">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                        <span>Salvar inventário</span>
+                    </button>
+                    <span class="inv-counter" data-inv-counter aria-live="polite">
+                        0 de 0 selecionado(s) nesta página
+                    </span>
+                </div>
+
+                {{ nav_paginas(inventario, url_pagina, 'medicamentos') }}
+            {% else %}
+                <div class="admin-empty-state">
+                    <i class="fa-solid fa-capsules" aria-hidden="true"></i>
+                    <h3>Nenhum medicamento encontrado</h3>
+                    <p>
+                        {% if inv_termo %}
+                            Nenhum medicamento corresponde à busca atual.
+                        {% else %}
+                            Cadastre medicamentos no painel para associá-los a esta farmácia.
+                        {% endif %}
+                    </p>
+                    <div class="empty-actions">
+                        {% if inv_termo %}
+                            <a class="btn btn-secondary"
+                               href="{{ url_for('admin.editar_farmacia', farmacia_id=farmacia.id) }}">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Limpar busca</span>
+                            </a>
+                        {% endif %}
+                        <a class="btn btn-primary" href="{{ url_for('admin.novo_medicamento') }}">
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Cadastrar medicamento</span>
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </form>
+    </section>
+{% endif %}
+{% endblock %}

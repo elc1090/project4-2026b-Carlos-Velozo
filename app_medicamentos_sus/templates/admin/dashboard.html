@@ -1,0 +1,170 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Visão geral — Painel MapeiaSUS{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fa-solid fa-chevron-right sep" aria-hidden="true"></i>
+    <strong>Visão geral</strong>
+{% endblock %}
+
+{% block page_title %}Visão geral{% endblock %}
+{% block page_subtitle %}
+    Bem-vindo, {{ current_user.nome or current_user.email }}. Acompanhe a base e as suas próprias pesquisas.
+{% endblock %}
+
+{% block page_actions %}
+    <span class="role-badge">Administrador</span>
+{% endblock %}
+
+{% block admin_content %}
+<section class="admin-panel quick-actions" aria-label="Ações rápidas">
+    <h2><i class="fa-solid fa-bolt" aria-hidden="true"></i> Ações rápidas</h2>
+    <div class="quick-actions-grid">
+        <a class="quick-action" href="{{ url_for('admin.nova_farmacia') }}">
+            <i class="fa-solid fa-circle-plus" aria-hidden="true"></i>
+            <span>Nova farmácia</span>
+        </a>
+        <a class="quick-action" href="{{ url_for('admin.novo_medicamento') }}">
+            <i class="fa-solid fa-capsules" aria-hidden="true"></i>
+            <span>Novo medicamento</span>
+        </a>
+        <a class="quick-action" href="{{ url_for('admin.farmacias') }}">
+            <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+            <span>Gerenciar farmácias</span>
+        </a>
+        <a class="quick-action" href="{{ url_for('admin.medicamentos') }}">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <span>Gerenciar medicamentos</span>
+        </a>
+    </div>
+</section>
+
+<section class="stats-grid" aria-label="Resumo da base de dados">
+    <a class="stat-card stat-card-link"
+       href="{{ url_for('admin.farmacias', situacao='ativas') }}">
+        <div class="stat-icon stat-icon--blue" aria-hidden="true">
+            <i class="fa-solid fa-house-medical"></i>
+        </div>
+        <div>
+            <div class="stat-value">{{ estatisticas.farmacias }}</div>
+            <div class="stat-label">Farmácias ativas</div>
+        </div>
+        <i class="stat-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+    </a>
+    <a class="stat-card stat-card-link"
+       href="{{ url_for('admin.medicamentos', situacao='ativos') }}">
+        <div class="stat-icon stat-icon--violet" aria-hidden="true">
+            <i class="fa-solid fa-pills"></i>
+        </div>
+        <div>
+            <div class="stat-value">{{ estatisticas.medicamentos }}</div>
+            <div class="stat-label">Medicamentos</div>
+        </div>
+        <i class="stat-arrow fa-solid fa-arrow-right" aria-hidden="true"></i>
+    </a>
+    <article class="stat-card"
+             title="Pares de farmácia e medicamento com disponibilidade ativa">
+        <div class="stat-icon stat-icon--emerald" aria-hidden="true">
+            <i class="fa-solid fa-link"></i>
+        </div>
+        <div>
+            <div class="stat-value">{{ estatisticas.vinculos }}</div>
+            <div class="stat-label">Vínculos ativos</div>
+            <div class="stat-hint">farmácia × medicamento</div>
+        </div>
+    </article>
+    <article class="stat-card">
+        <div class="stat-icon stat-icon--amber" aria-hidden="true">
+            <i class="fa-solid fa-users"></i>
+        </div>
+        <div>
+            <div class="stat-value">{{ estatisticas.usuarios }}</div>
+            <div class="stat-label">Usuários ativos</div>
+        </div>
+    </article>
+</section>
+
+<div class="dashboard-grid">
+    <section class="admin-panel">
+        <div class="panel-header">
+            <div>
+                <h2><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Minhas pesquisas recentes</h2>
+                <p class="panel-hint">Últimas buscas desta conta.</p>
+            </div>
+            <a class="panel-link" href="{{ url_for('public.index') }}">
+                Abrir busca <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        {% if pesquisas %}
+            <div class="table-wrapper">
+                <table class="recent-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Medicamento pesquisado</th>
+                            <th scope="col">Data e hora (UTC)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pesquisa in pesquisas %}
+                            <tr>
+                                <td>{{ pesquisa.termo_busca }}</td>
+                                <td>
+                                    {% if pesquisa.data_hora %}
+                                        <time datetime="{{ pesquisa.data_hora.isoformat() }}">
+                                            {{ pesquisa.data_hora.strftime("%d/%m/%Y · %H:%M") }}
+                                        </time>
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="admin-empty-state admin-empty-state--compact">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <h3>Ainda não há pesquisas registradas</h3>
+                <p>Suas buscas nesta conta aparecem aqui.</p>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="admin-panel">
+        <div class="panel-header">
+            <div>
+                <h2><i class="fa-solid fa-ranking-star" aria-hidden="true"></i> Mais pesquisados</h2>
+                <p class="panel-hint">Termos mais buscados pelos usuários.</p>
+            </div>
+        </div>
+
+        {% if mais_pesquisados %}
+            {% set maximo = mais_pesquisados[0].total or 1 %}
+            <ol class="rank-list">
+                {% for item in mais_pesquisados %}
+                    <li class="rank-item">
+                        <span class="rank-position">{{ loop.index }}</span>
+                        <span class="rank-info">
+                            <span class="rank-term" title="{{ item.termo }}">{{ item.termo }}</span>
+                            <span class="rank-bar" aria-hidden="true">
+                                <span style="width: {{ (item.total / maximo * 100)|round|int }}%"></span>
+                            </span>
+                        </span>
+                        <span class="rank-total">
+                            {{ item.total }} {{ 'busca' if item.total == 1 else 'buscas' }}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ol>
+        {% else %}
+            <div class="admin-empty-state admin-empty-state--compact">
+                <i class="fa-solid fa-chart-simple" aria-hidden="true"></i>
+                <h3>Sem dados suficientes</h3>
+                <p>As buscas mais frequentes de todos os usuários aparecerão aqui.</p>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
