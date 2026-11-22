@@ -1,0 +1,175 @@
+{% extends "admin/base_admin.html" %}
+{% from "admin/_pagination.html" import nav_paginas %}
+
+{% block title %}Administradores — Painel MapeiaSUS{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fa-solid fa-chevron-right sep" aria-hidden="true"></i>
+    <strong>Administradores</strong>
+{% endblock %}
+
+{% block page_title %}Administradores{% endblock %}
+{% block page_subtitle %}
+    Quem pode acessar o painel. Total: {{ total_admins }} administrador(es).
+{% endblock %}
+
+{% block admin_content %}
+<section class="admin-panel" id="novo-administrador">
+    <div class="panel-header">
+        <div>
+            <h2><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Adicionar administrador</h2>
+            <p class="panel-hint">
+                E-mail novo cria conta com a senha abaixo. Se a conta já existir,
+                só promove a administrador e troca a senha se preencher o campo.
+            </p>
+        </div>
+    </div>
+
+    <form method="post" novalidate data-loading>
+        {{ form.hidden_tag() }}
+
+        <div class="form-grid">
+            <div class="form-group">
+                {{ form.nome.label }}
+                {{ form.nome(class="form-input", placeholder="Nome (opcional)") }}
+                {% for erro in form.nome.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.email.label }}
+                {{ form.email(class="form-input", placeholder="nome@exemplo.com", autocomplete="off") }}
+                {% for erro in form.email.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group form-span-2">
+                {{ form.senha.label }}
+                {{ form.senha(class="form-input", placeholder="Mínimo de 8 caracteres",
+                              autocomplete="new-password") }}
+                {% for erro in form.senha.errors %}
+                    <span class="field-error" role="alert">{{ erro }}</span>
+                {% endfor %}
+                <span class="form-hint">
+                    Só é obrigatória para criar conta nova. Em branco, promove quem
+                    já está cadastrado.
+                </span>
+            </div>
+        </div>
+
+        <div class="admin-form-actions">
+            <button class="btn btn-primary" type="submit">
+                <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                <span>{{ form.submit.label.text }}</span>
+            </button>
+        </div>
+    </form>
+</section>
+
+<section class="admin-panel">
+    <div class="panel-header">
+        <div>
+            <h2><i class="fa-solid fa-users-gear" aria-hidden="true"></i> Contas cadastradas</h2>
+        </div>
+    </div>
+
+    <form class="admin-toolbar" method="get" action="{{ url_for('admin.administradores') }}">
+        <div class="toolbar-search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input class="form-input" type="search" name="q" value="{{ termo }}"
+                   placeholder="Buscar por nome ou e-mail" aria-label="Buscar usuários">
+        </div>
+        <button class="btn btn-primary" type="submit">
+            <i class="fa-solid fa-filter" aria-hidden="true"></i><span>Buscar</span>
+        </button>
+        {% if termo %}
+            <a class="btn btn-secondary" href="{{ url_for('admin.administradores') }}">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i><span>Limpar</span>
+            </a>
+        {% endif %}
+    </form>
+
+    {% if paginacao.items %}
+        <div class="table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Usuário</th>
+                        <th scope="col">Papel</th>
+                        <th scope="col">Origem</th>
+                        <th scope="col">Situação</th>
+                        <th scope="col" class="cell-actions">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in paginacao.items %}
+                        <tr>
+                            <td>
+                                <div class="cell-ident">
+                                    <span class="cell-thumb">
+                                        <i class="fa-solid fa-circle-user" aria-hidden="true"></i>
+                                    </span>
+                                    <span class="cell-ident-text">
+                                        <strong>{{ usuario.nome or usuario.email }}</strong>
+                                        <span class="cell-sub">{{ usuario.email }}</span>
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge {{ 'badge-info' if usuario.is_admin else 'badge-muted' }}">
+                                    {{ 'Administrador' if usuario.is_admin else 'Usuário' }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if usuario.email|lower in admins_fixos %}
+                                    <span class="badge badge-warning">Configuração</span>
+                                {% else %}
+                                    <span class="badge badge-muted">Painel</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if usuario.ativo %}
+                                    <span class="badge badge-success">Ativa</span>
+                                {% else %}
+                                    <span class="badge badge-muted">Inativa</span>
+                                {% endif %}
+                            </td>
+                            <td class="cell-actions">
+                                {% if usuario.is_admin %}
+                                    <form method="post"
+                                          action="{{ url_for('admin.remover_administrador', usuario_id=usuario.id) }}"
+                                          data-confirm="Tirar o acesso de administrador de &quot;{{ usuario.email }}&quot;?">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-danger btn-sm" type="submit">
+                                            <i class="fa-solid fa-user-slash" aria-hidden="true"></i>
+                                            <span>Remover acesso</span>
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="cell-sub">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {{ nav_paginas(paginacao, url_pagina, 'usuários') }}
+    {% else %}
+        <div class="admin-empty-state">
+            <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
+            <h3>Nenhum usuário encontrado</h3>
+            <p>
+                {% if termo %}
+                    Nenhuma conta corresponde à busca atual.
+                {% else %}
+                    Ainda não há usuários cadastrados.
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

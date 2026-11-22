@@ -10,6 +10,7 @@ login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 login_manager.login_message = "Faça login para continuar."
 login_manager.login_message_category = "warning"
-login_manager.session_protection = "strong"
+# "strong" remove a sessão se o X-Forwarded-For variar entre requisições no proxy.
+login_manager.session_protection = "basic"
 
 csrf = CSRFProtect()

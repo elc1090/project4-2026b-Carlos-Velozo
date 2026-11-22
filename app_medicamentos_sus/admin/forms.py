@@ -2,7 +2,7 @@
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField
-from wtforms import BooleanField, FloatField, StringField, SubmitField
+from wtforms import BooleanField, FloatField, PasswordField, StringField, SubmitField
 from wtforms.validators import (
     DataRequired,
     InputRequired,
@@ -12,8 +12,9 @@ from wtforms.validators import (
     ValidationError,
 )
 
+from auth.forms import EmailValido
 from extensions import db
-from models import Farmacia, Medicamento
+from models import Farmacia, Medicamento, User
 
 
 def _limpar(valor):
@@ -84,14 +85,14 @@ class FarmaciaForm(FlaskForm):
     lat = FloatField(
         "Latitude",
         validators=[
-            InputRequired(message="Informe a latitude."),
+            InputRequired(message="Selecione um ponto no mapa."),
             NumberRange(min=-90, max=90, message="A latitude deve ficar entre -90 e 90."),
         ],
     )
     lng = FloatField(
         "Longitude",
         validators=[
-            InputRequired(message="Informe a longitude."),
+            InputRequired(message="Selecione um ponto no mapa."),
             NumberRange(
                 min=-180,
                 max=180,
@@ -171,3 +172,36 @@ class MedicamentoForm(FlaskForm):
             consulta = consulta.filter(Medicamento.id != self.medicamento_id)
         if consulta.first() is not None:
             raise ValidationError("Já existe um medicamento com este nome.")
+
+
+class AdministradorForm(FlaskForm):
+    nome = StringField(
+        "Nome",
+        filters=[_limpar],
+        validators=[Optional(), Length(max=120)],
+    )
+    email = StringField(
+        "E-mail",
+        filters=[_limpar],
+        validators=[
+            DataRequired(message="Informe o e-mail."),
+            EmailValido(),
+            Length(max=255),
+        ],
+    )
+    senha = PasswordField(
+        "Senha inicial",
+        validators=[Optional(), Length(min=8, max=128,
+                    message="A senha deve ter entre 8 e 128 caracteres.")],
+    )
+    submit = SubmitField("Adicionar administrador")
+
+    def validate_email(self, campo):
+        email = (campo.data or "").strip().lower()
+        usuario = (
+            db.session.query(User)
+            .filter(db.func.lower(User.email) == email)
+            .first()
+        )
+        if usuario is not None and usuario.is_admin:
+            raise ValidationError("Este e-mail já é administrador.")

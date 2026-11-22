@@ -278,6 +278,175 @@
         atualizarInventario();
     }
 
+    /* -------------------------------------- Seletor de ponto no mapa */
+    const mapaElemento = document.getElementById("mapa-localizacao");
+    const campoLat = document.getElementById("lat");
+    const campoLng = document.getElementById("lng");
+
+    if (mapaElemento && campoLat && campoLng) {
+        const statusMapa = document.querySelector("[data-mapa-status]");
+        const leituraCoords = document.querySelector("[data-mapa-coordenadas]");
+        const textoLat = document.querySelector("[data-mapa-lat]");
+        const textoLng = document.querySelector("[data-mapa-lng]");
+        const botaoLocalizacao = document.getElementById("mapa-minha-localizacao");
+        const botaoLimpar = document.getElementById("mapa-limpar");
+        const centroPadrao = [-29.6847, -53.8045];
+        let mapa = null;
+        let marcador = null;
+
+        function numero(campo) {
+            const valor = Number.parseFloat(campo.value);
+            return Number.isFinite(valor) ? valor : null;
+        }
+
+        function mostrarCoordenadas(lat, lng) {
+            if (!textoLat || !textoLng || !leituraCoords || !statusMapa) {
+                return;
+            }
+            textoLat.textContent = lat.toFixed(6).replace(".", ",");
+            textoLng.textContent = lng.toFixed(6).replace(".", ",");
+            leituraCoords.hidden = false;
+            statusMapa.textContent = "Ponto selecionado.";
+        }
+
+        function limparCoordenadas() {
+            campoLat.value = "";
+            campoLng.value = "";
+            if (marcador && mapa) {
+                mapa.removeLayer(marcador);
+                marcador = null;
+            }
+            if (leituraCoords) {
+                leituraCoords.hidden = true;
+            }
+            if (statusMapa) {
+                statusMapa.textContent = "Nenhum ponto selecionado.";
+            }
+        }
+
+        function definirCoordenadas(lat, lng) {
+            campoLat.value = lat.toFixed(6);
+            campoLng.value = lng.toFixed(6);
+
+            if (mapa) {
+                if (!marcador) {
+                    marcador = L.marker([lat, lng], { draggable: true }).addTo(mapa);
+                    marcador.on("dragend", function () {
+                        const ponto = marcador.getLatLng();
+                        definirCoordenadas(ponto.lat, ponto.lng);
+                    });
+                } else {
+                    marcador.setLatLng([lat, lng]);
+                }
+                mapa.setView([lat, lng], Math.max(mapa.getZoom(), 15));
+            }
+
+            mostrarCoordenadas(lat, lng);
+        }
+
+        if (!window.L) {
+            campoLat.type = "number";
+            campoLng.type = "number";
+            campoLat.step = "any";
+            campoLng.step = "any";
+            campoLat.classList.add("form-input");
+            campoLng.classList.add("form-input");
+            campoLat.placeholder = "-29.684200";
+            campoLng.placeholder = "-53.804500";
+            if (statusMapa) {
+                statusMapa.textContent =
+                    "Mapa indisponível. Informe as coordenadas nos campos abaixo.";
+            }
+            if (botaoLocalizacao) {
+                botaoLocalizacao.hidden = true;
+            }
+            if (botaoLimpar) {
+                botaoLimpar.addEventListener("click", limparCoordenadas);
+            }
+        } else {
+            const latInicial = numero(campoLat);
+            const lngInicial = numero(campoLng);
+            const temPonto = latInicial !== null && lngInicial !== null;
+
+            mapa = L.map(mapaElemento).setView(
+                temPonto ? [latInicial, lngInicial] : centroPadrao,
+                temPonto ? 16 : 13
+            );
+
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+                attribution:
+                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            }).addTo(mapa);
+
+            function aoClicar(evento) {
+                definirCoordenadas(evento.latlng.lat, evento.latlng.lng);
+            }
+
+            mapa.on("click", aoClicar);
+
+            if (temPonto) {
+                definirCoordenadas(latInicial, lngInicial);
+            }
+
+            if (botaoLocalizacao) {
+                botaoLocalizacao.addEventListener("click", function () {
+                    if (!navigator.geolocation) {
+                        if (statusMapa) {
+                            statusMapa.textContent =
+                                "Este navegador não oferece localização.";
+                        }
+                        return;
+                    }
+
+                    if (statusMapa) {
+                        statusMapa.textContent = "Consultando sua localização...";
+                    }
+
+                    navigator.geolocation.getCurrentPosition(
+                        function (posicao) {
+                            definirCoordenadas(
+                                posicao.coords.latitude,
+                                posicao.coords.longitude
+                            );
+                        },
+                        function () {
+                            if (statusMapa) {
+                                statusMapa.textContent =
+                                    "Não foi possível obter sua localização. Clique no mapa.";
+                            }
+                        },
+                        { enableHighAccuracy: true, timeout: 10000 }
+                    );
+                });
+            }
+
+            if (botaoLimpar) {
+                botaoLimpar.addEventListener("click", limparCoordenadas);
+            }
+        }
+
+        const formularioFarmacia = mapaElemento.closest("form");
+        if (formularioFarmacia) {
+            formularioFarmacia.addEventListener("submit", function (evento) {
+                if (numero(campoLat) !== null && numero(campoLng) !== null) {
+                    return;
+                }
+
+                evento.preventDefault();
+                evento.stopImmediatePropagation();
+
+                if (statusMapa) {
+                    statusMapa.textContent = "Selecione um ponto no mapa antes de salvar.";
+                }
+                mapaElemento.scrollIntoView({ behavior: "smooth", block: "center" });
+                if (campoLat.type === "number") {
+                    campoLat.focus();
+                }
+            }, true);
+        }
+    }
+
     /* ----------------------------- Estado de envio dos formulários */
     document.addEventListener("submit", function (evento) {
         const formulario = evento.target;

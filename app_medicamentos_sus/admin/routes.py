@@ -2,6 +2,7 @@
 
 from flask import (
     Blueprint,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -18,7 +19,7 @@ from historico import historico_recente, termos_mais_pesquisados_geral
 from models import Farmacia, FarmaciaMedicamento, Medicamento, User
 from utils import remover_acentos
 
-from .forms import FarmaciaForm, MedicamentoForm
+from .forms import AdministradorForm, FarmaciaForm, MedicamentoForm
 from .uploads import guardar_imagem, remover_imagem
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -151,6 +152,110 @@ def dashboard():
         pesquisas=pesquisas,
         mais_pesquisados=mais_pesquisados,
     )
+
+
+# -------------------------------------------------------------- administradores
+def _render_administradores(form: AdministradorForm, termo: str = ""):
+    consulta = User.query
+    if termo:
+        padrao = f"%{termo}%"
+        consulta = consulta.filter(
+            or_(User.nome.ilike(padrao), User.email.ilike(padrao))
+        )
+
+    paginacao = consulta.order_by(
+        User.role.asc(), db.func.lower(User.email)
+    ).paginate(page=_pagina(), per_page=POR_PAGINA, error_out=False)
+
+    return render_template(
+        "admin/administradores.html",
+        form=form,
+        paginacao=paginacao,
+        termo=termo,
+        admins_fixos={
+            email.strip().lower()
+            for email in (current_app.config.get("ADMIN_EMAILS") or [])
+            if email and email.strip()
+        },
+        total_admins=User.query.filter_by(role="admin").count(),
+        url_pagina=_urls_pagina(),
+    )
+
+
+@bp.route("/administradores", methods=["GET", "POST"])
+@admin_required
+def administradores():
+    form = AdministradorForm()
+    termo = (request.args.get("q") or "").strip()
+
+    if form.validate_on_submit():
+        email = (form.email.data or "").strip().lower()
+        nome = form.nome.data or None
+        senha = form.senha.data or ""
+        usuario = (
+            db.session.query(User)
+            .filter(db.func.lower(User.email) == email)
+            .first()
+        )
+
+        if usuario is None:
+            if not senha:
+                form.senha.errors.append("Defina uma senha inicial para a nova conta.")
+                return _render_administradores(form, termo)
+
+            usuario = User(email=email, nome=nome, role="admin", ativo=True)
+            usuario.definir_senha(senha)
+            db.session.add(usuario)
+            mensagem = f"Administrador {email} criado."
+        else:
+            if senha:
+                usuario.definir_senha(senha)
+            if nome:
+                usuario.nome = nome
+            reativado = not usuario.ativo
+            usuario.ativo = True
+            usuario.role = "admin"
+            mensagem = f"{email} agora é administrador."
+            if reativado:
+                mensagem += " A conta foi reativada."
+
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            form.email.errors.append("Não foi possível salvar este e-mail.")
+            return _render_administradores(form, termo)
+
+        flash(mensagem, "success")
+        return redirect(url_for("admin.administradores"))
+
+    return _render_administradores(form, termo)
+
+
+@bp.post("/administradores/<int:usuario_id>/remover")
+@admin_required
+def remover_administrador(usuario_id: int):
+    usuario = db.get_or_404(User, usuario_id)
+    fixos = {
+        email.strip().lower()
+        for email in (current_app.config.get("ADMIN_EMAILS") or [])
+        if email and email.strip()
+    }
+
+    if not usuario.is_admin:
+        flash("Este usuário já não é administrador.", "warning")
+    elif usuario.id == current_user.id:
+        flash("Você não pode remover seu próprio acesso.", "error")
+    elif (usuario.email or "").strip().lower() in fixos:
+        flash("Este e-mail é administrador por configuração do sistema.", "error")
+    elif User.query.filter_by(role="admin").count() <= 1:
+        flash("Não é possível remover o último administrador.", "error")
+    else:
+        usuario.role = "user"
+        db.session.commit()
+        flash(f"Acesso de administrador removido de {usuario.email}.", "success")
+
+    return redirect(url_for("admin.administradores"))
 
 
 # ------------------------------------------------------------------ farmácias

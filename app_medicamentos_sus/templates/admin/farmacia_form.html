@@ -3,6 +3,11 @@
 
 {% block title %}{{ 'Editar farmácia' if farmacia else 'Nova farmácia' }} — Painel MapeiaSUS{% endblock %}
 
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
 {% block breadcrumb %}
     <i class="fa-solid fa-chevron-right sep" aria-hidden="true"></i>
     <a href="{{ url_for('admin.farmacias') }}">Farmácias</a>
@@ -76,22 +81,45 @@
                 {% endfor %}
             </div>
 
-            <div class="form-group">
-                {{ form.lat.label }}
-                {{ form.lat(class="form-input", step="any", placeholder="-29.6842") }}
-                {% for erro in form.lat.errors %}
-                    <span class="field-error" role="alert">{{ erro }}</span>
-                {% endfor %}
-                <span class="form-hint">Coordenada decimal entre -90 e 90.</span>
-            </div>
+            <div class="form-group form-span-2 mapa-grupo">
+                <label for="lat">Localização no mapa <span class="required-mark">*</span></label>
+                <p class="panel-hint">
+                    Clique no mapa para marcar o ponto da farmácia. Arraste o marcador
+                    para ajustar a posição.
+                </p>
 
-            <div class="form-group">
-                {{ form.lng.label }}
-                {{ form.lng(class="form-input", step="any", placeholder="-53.8069") }}
-                {% for erro in form.lng.errors %}
+                <div class="mapa-picker" id="mapa-localizacao"
+                     role="application" aria-label="Mapa para escolher a localização"></div>
+
+                {{ form.lat(type="hidden") }}
+                {{ form.lng(type="hidden") }}
+
+                <div class="mapa-leitura" data-mapa-leitura>
+                    <span class="mapa-status" data-mapa-status>
+                        Nenhum ponto selecionado.
+                    </span>
+                    <span class="mapa-coordenadas" data-mapa-coordenadas hidden>
+                        Latitude <strong data-mapa-lat></strong> ·
+                        Longitude <strong data-mapa-lng></strong>
+                    </span>
+                </div>
+
+                {% for erro in form.lat.errors + form.lng.errors %}
                     <span class="field-error" role="alert">{{ erro }}</span>
                 {% endfor %}
-                <span class="form-hint">Coordenada decimal entre -180 e 180.</span>
+
+                <div class="mapa-acoes">
+                    <button type="button" class="btn btn-secondary btn-sm"
+                            id="mapa-minha-localizacao">
+                        <i class="fa-solid fa-crosshairs" aria-hidden="true"></i>
+                        <span>Usar minha localização</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm"
+                            id="mapa-limpar">
+                        <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+                        <span>Limpar ponto</span>
+                    </button>
+                </div>
             </div>
 
             <div class="form-group form-span-2">
@@ -295,4 +323,9 @@
         </form>
     </section>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{{ super() }}
 {% endblock %}

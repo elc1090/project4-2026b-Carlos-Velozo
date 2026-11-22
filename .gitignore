@@ -48,3 +48,4 @@ htmlcov/
 # Arquivos locais de desenvolvimento (não fazem parte do projeto)
 init_db_sqlite_legacy.py
 README_dev.md
+README_p2.md

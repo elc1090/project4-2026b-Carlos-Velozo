@@ -1,6 +1,7 @@
 {% set rota = request.endpoint %}
 {% set em_farmacias = rota in ['admin.farmacias', 'admin.nova_farmacia', 'admin.editar_farmacia'] %}
 {% set em_medicamentos = rota in ['admin.medicamentos', 'admin.novo_medicamento', 'admin.editar_medicamento'] %}
+{% set em_administradores = rota in ['admin.administradores'] %}
 
 <nav class="admin-menu" aria-label="Seções do painel">
     <span class="admin-menu-label">Gestão</span>
@@ -22,6 +23,12 @@
         <i class="fa-solid fa-pills" aria-hidden="true"></i>
         <span>Medicamentos</span>
     </a>
+
+    <a class="admin-menu-link" href="{{ url_for('admin.administradores') }}"
+       {% if em_administradores %}aria-current="page"{% endif %}>
+        <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+        <span>Administradores</span>
+    </a>
 </nav>
 
 <div class="admin-menu">
@@ -35,6 +42,11 @@
     <a class="admin-shortcut" href="{{ url_for('admin.novo_medicamento') }}">
         <i class="fa-solid fa-circle-plus" aria-hidden="true"></i>
         <span>Novo medicamento</span>
+    </a>
+
+    <a class="admin-shortcut" href="{{ url_for('admin.administradores', _anchor='novo-administrador') }}">
+        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+        <span>Novo administrador</span>
     </a>
 </div>
 
