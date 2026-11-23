@@ -22,11 +22,11 @@ A diferença principal é que os dados deixaram de ser só consultados. No paine
 
 Comecei mantendo a estrutura que já funcionava: Flask, consulta de medicamentos, mapa com Leaflet e histórico de buscas. Sobre isso montei a autenticação por e-mail e senha com Flask-Login. Guardei apenas o hash da senha no banco e tomei cuidado para não revelar se um e-mail existe ou não: qualquer falha devolve a mesma mensagem.
 
-Depois acrescentei o login com Google. O botão no navegador devolve um ID token e quem decide se a conta é válida é o servidor: verifico assinatura, audiência, emissor e se o e-mail foi confirmado. Se o usuário já tiver conta com aquele e-mail, eu vinculo o Google nela; se não tiver, crio uma conta nova.
+Depois acrescentei o login com Google. O botão no navegador devolve um ID token e quem decide se a conta é válida é o servidor: verifico assinatura, audiência, emissor e se o e-mail foi confirmado. Se o usuário já tiver conta com aquele e-mail, eu vinculo o Google nela, se não estiver crio uma conta nova.
 
 No painel administrativo fiz o CRUD de farmácias e medicamentos. Uma mudança que melhorou bastante o cadastro foi trocar os campos de coordenadas por um clique no mapa. O marcador é arrastável, aparece no lugar certo quando edito uma farmácia e ainda posso usar a localização atual do aparelho. Também criei uma aba para adicionar e remover administradores, com bloqueio para não remover a própria conta, o último administrador ou os e-mails definidos nas variáveis do Render.
 
-No deploy eu aprendi na prática a configurar o plano gratuito do Render: web e Postgres free, sem disco persistente, build com os scripts de banco e admin inicial, health check em `/health` e variáveis de ambiente com `sync: false`, que precisam ser preenchidas à mão. Duas limitações do plano eu contornei: o banco free expira depois de 30 dias e as fotos enviadas desaparecem a cada deploy, então passei a usar a URL da imagem quando preciso de algo fixo.
+No deploy eu aprendi na prática a configurar o plano gratuito do Render: web e Postgres free, sem disco persistente, build com os scripts de banco e admin inicial. Duas limitações do plano que eu contornei: o banco free expira depois de 30 dias e as fotos enviadas desaparecem a cada deploy, então passei a usar a URL da imagem quando preciso de algo fixo.
 
 Um dos problemas mais chatos foi ser deslogado ao salvar uma farmácia. O Flask-Login estava com a proteção de sessão no modo `strong`, que compara IP e User-Agent; como o proxy do Render muda o IP repassado entre uma requisição e outra, a sessão era apagada justo no envio do formulário. Troquei para `basic` e o cadastro passou a funcionar normalmente.
 
